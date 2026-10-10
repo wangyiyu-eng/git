@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeepSeek-Vision 答卷智能判题系统</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- MathJax 3（CDN，用于 LaTeX 公式内嵌渲染） -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <!-- ECharts 5：本地优先（答辩断网也能用），加载失败自动回退 CDN -->
+  <script src="vendor/echarts.min.js"></script>
+  <script>
+    if (!window.echarts) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">📝</span>
+      <div>
+        <h1>DeepSeek-Vision 答卷智能判题系统</h1>
+        <p class="subtitle">基于多模态大模型的智能判题 · 知识点薄弱分析 · 推理链完整性评估</p>
+      </div>
+    </div>
+    <!-- 顶部导航：在【答卷判题】与【学情分析】两个页面间切换 -->
+    <nav class="topnav" id="topnav">
+      <button class="nav-item active" data-page="judge">
+        <span class="nav-icon">📷</span><span>答卷判题</span>
+      </button>
+      <button class="nav-item" data-page="analytics">
+        <span class="nav-icon">📊</span><span>学情分析</span>
+      <span class="nav-badge" id="navBadge" hidden>·</span>
+      </button>
+    </nav>
+    <div class="api-status" id="apiStatus">检测中...</div>
+  </header>
+
+  <main>
+    <!-- ================= 页面 1：答卷判题工作台 ================= -->
+    <section class="page active" id="page-judge">
+      <!-- 左侧：上传与参数 -->
+      <section class="panel left">
+        <ol class="stepper">
+          <li class="step-item active" data-step="1">
+            <span class="dot">1</span><span class="label">上传答卷</span>
+          </li>
+          <li class="step-item" data-step="2">
+            <span class="dot">2</span><span class="label">填写信息</span>
+          </li>
+          <li class="step-item" data-step="3">
+            <span class="dot">3</span><span class="label">确认判题</span>
+          </li>
+        </ol>
+
+        <div class="step-panel active" id="stepPanel1">
+          <h2>① 上传答卷图片</h2>
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept="image/*" multiple hidden />
+            <div class="drop-tip">
+              <div class="drop-icon">🖼️</div>
+              <p>将答卷图片拖到此处，或点击下方按钮</p>
+              <p class="hint">支持 jpg / png / jpeg · 单页或多页 · 多题在同一页也可识别</p>
+            </div>
+          </div>
+
+          <div class="upload-actions">
+            <button id="btnUpload" class="btn-upload">
+              <span class="btn-icon">📷</span>
+              <span>上传照片</span>
+              <input type="file" id="fileInput2" accept="image/*" multiple hidden />
+            </button>
+            <button id="btnClear" class="btn ghost" disabled>
+              <span class="btn-icon">🗑</span><span>清空列表</span>
+            </button>
+          </div>
+
+          <div id="previewList" class="preview-list empty">
+            <div class="preview-empty">
+              <span class="empty-icon">📂</span> 尚未选择答卷
+            </div>
+          </div>
+
+          <div class="confirm-bar" id="confirmBar">
+            <div class="confirm-info">
+              <span class="confirm-count" id="confirmCount">0</span>
+              <span> 张答卷待确认</span>
+            </div>
+            <button id="btnConfirm" class="btn-confirm" disabled>
+              <span class="btn-icon">✓</span>
+              <span>确认上传</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="step-panel" id="stepPanel2">
+          <h2>② 题目信息（可选）</h2>
+          <label class="field-label">参考信息 / 已知条件</label>
+          <textarea id="questionContext" rows="3"
+            placeholder="例如：用中值换元法解下列方程，x 为实数。"></textarea>
+
+          <label class="field-label">每题满分</label>
+          <div class="score-input">
+            <input type="number" id="fullScore" value="10" min="1" max="20" />
+            <span class="score-suffix">分 / 题</span>
+            <span class="score-hint">多题页面总分 = 每题满分 × 题数</span>
+          </div>
+
+          <div class="nav-row">
+            <button id="btnBack1" class="btn ghost">← 返回上传</button>
+            <button id="btnNext2" class="btn primary">下一步 →</button>
+          </div>
+        </div>
+
+        <div class="step-panel" id="stepPanel3">
+          <h2>③ 确认并开始判题</h2>
+          <div class="confirm-summary" id="confirmSummary"></div>
+
+          <div class="actions">
+            <button id="btnBack2" class="btn ghost">← 返回修改</button>
+            <button id="btnJudge" class="btn primary big">
+              <span class="btn-icon">▶</span><span>开始判题</span>
+            </button>
+            <button id="btnBatch" class="btn" disabled title="批量上传多张答卷时启用">
+              <span class="btn-icon">📚</span><span>批量判题</span>
+            </button>
+          </div>
+
+          <div id="progress" class="progress hidden">
+            <div class="bar"><div class="fill" id="progressFill"></div></div>
+            <div class="progress-text" id="progressText">准备中...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右侧：结果 -->
+      <section class="panel right">
+        <div class="result-header">
+          <h2>📊 判题结果</h2>
+          <div class="result-tabs" id="resultTabs" hidden>
+            <button class="tab active" data-filter="all">全部</button>
+            <button class="tab" data-filter="correct">全对</button>
+            <button class="tab" data-filter="partial">有错</button>
+          </div>
+        </div>
+        <div id="resultArea" class="result-area empty">
+          <div class="placeholder">
+            <div class="ph-icon">📊</div>
+            <p>请先上传答卷图片</p>
+            <p class="hint">上传 → 确认 → 填写信息 → 开始判题</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ================= 页面 2：学情统计与知识图谱分析 ================= -->
+    <section class="page" id="page-analytics">
+      <!-- 顶部工具栏：统计周期切换 + 刷新 -->
+      <div class="analytics-toolbar">
+        <div class="tb-left">
+          <span class="tb-title">📊 学情分析与知识图谱</span>
+          <span class="tb-sub" id="tbSub">数据来源于历史判题记录</span>
+        </div>
+        <div class="tb-right">
+          <div class="range-picker">
+            <label>统计周期</label>
+            <select id="rangeSel">
+              <option value="7">最近 7 天</option>
+              <option value="30" selected>最近 30 天</option>
+              <option value="90">最近 90 天</option>
+              <option value="365">最近 1 年</option>
+            </select>
+          </div>
+          <button id="btnRefresh" class="btn primary small">
+            <span class="btn-icon">↻</span><span>刷新数据</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI 卡片 -->
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card">
+          <div class="kpi-icon blue">📄</div>
+          <div class="kpi-main">
+            <div class="kpi-label">判题答卷</div>
+            <div class="kpi-value" id="kpiPaper">—</div>
+            <div class="kpi-foot" id="kpiPaperFoot">共 N 张</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon indigo">🧮</div>
+          <div class="kpi-main">
+            <div class="kpi-label">累计题目</div>
+            <div class="kpi-value" id="kpiProblem">—</div>
+            <div class="kpi-foot" id="kpiProblemFoot">—</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green">🎯</div>
+          <div class="kpi-main">
+            <div class="kpi-label">平均得分率</div>
+            <div class="kpi-value" id="kpiAvgRate">—</div>
+            <div class="kpi-foot" id="kpiAvgRateFoot">—</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon orange">✅</div>
+          <div class="kpi-main">
+            <div class="kpi-label">及格率</div>
+            <div class="kpi-value" id="kpiPass">—</div>
+            <div class="kpi-foot" id="kpiPassFoot">—</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red">⚠️</div>
+          <div class="kpi-main">
+            <div class="kpi-label">错误总数</div>
+            <div class="kpi-value" id="kpiErr">—</div>
+            <div class="kpi-foot" id="kpiErrFoot">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第一行图表：折线 + 直方图 -->
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3>📈 得分率趋势</h3>
+            <span class="chart-sub">按天聚合，0~100%</span>
+          </div>
+          <div class="chart-body" id="chartTrend"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3>📊 得分率分布</h3>
+            <span class="chart-sub">答卷分数段统计</span>
+          </div>
+          <div class="chart-body" id="chartDist"></div>
+        </div>
+      </div>
+
+      <!-- 第二行图表：饼图（错误分类） + 柱状图（薄弱知识点） -->
+      <div class="chart-row">
+        <div class="chart-card small">
+          <div class="chart-head">
+            <h3>🎯 错误类型分布</h3>
+            <span class="chart-sub">计算 / 概念 / 逻辑</span>
+          </div>
+          <div class="chart-body" id="chartErrPie"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3>⚠ 知识点薄弱排行 TOP10</h3>
+            <span class="chart-sub">错误率越高，柱越长</span>
+          </div>
+          <div class="chart-body" id="chartKpBar"></div>
+        </div>
+      </div>
+
+      <!-- 第三行：知识图谱 -->
+      <div class="chart-row single">
+        <div class="chart-card graph-card">
+          <div class="chart-head">
+            <h3>🕸 知识图谱（按错误率着色）</h3>
+            <span class="chart-sub">绿色=掌握好 · 红色=薄弱 · 灰色=未考核 · 可拖拽</span>
+          </div>
+          <div class="chart-body graph-body" id="chartGraph"></div>
+          <div class="graph-legend">
+            <span class="lg-item"><i class="lg-dot" style="background:#1fa860"></i>掌握 ≥80%</span>
+            <span class="lg-item"><i class="lg-dot" style="background:#f39c12"></i>60~80%</span>
+            <span class="lg-item"><i class="lg-dot" style="background:#e05a5a"></i>&lt;60%</span>
+            <span class="lg-item"><i class="lg-dot" style="background:#bbb"></i>未考核</span>
+            <span class="lg-item"><i class="lg-line" style="background:#4f6dff"></i>前置关系 prerequisite</span>
+            <span class="lg-item"><i class="lg-line" style="background:#bbb"></i>关联关系 related</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近判题记录表 -->
+      <div class="chart-row single">
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3>📋 最近判题记录</h3>
+            <span class="chart-sub">点击行可下钻（提示：完整 JSON 见判题页）</span>
+          </div>
+          <div class="chart-body table-body">
+            <div class="table-scroll">
+              <table class="recent-table" id="recentTable">
+                <thead>
+                  <tr>
+                    <th>#</th><th>答卷文件</th><th>题目数</th>
+                    <th>得分</th><th>得分率</th>
+                    <th>错误统计</th><th>薄弱知识点</th>
+                    <th>是否及格</th><th>耗时</th><th>时间</th>
+                  </tr>
+                </thead>
+                <tbody id="recentTbody">
+                  <tr><td colspan="10" class="empty">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toastWrap" class="toast-wrap"></div>
+
+  <footer>
+    <p>毕业设计项目 · DeepSeek-Vision 多模态大模型 · 前后端分离架构 · SQLite 数据持久化</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

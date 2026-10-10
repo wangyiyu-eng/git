@@ -1,0 +1,10 @@
+[
+  {
+    "image_path": "backend/data/sample_images/sample.jpg",
+    "context": "解方程 x + 1 = 3",
+    "full_score": 10,
+    "expected_final_verdict": "incorrect",
+    "expected_error_types": ["calculation_error"],
+    "expected_weak_points": ["MATH-LIN-1V"]
+  }
+]

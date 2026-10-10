@@ -1,0 +1,54 @@
+{
+  "subject": "通用基础（含数学/编程）",
+  "nodes": [
+    {"id": "MATH-BASIC-OP",      "name": "四则运算",         "difficulty": 1, "subject": "math"},
+    {"id": "MATH-EQ-PROP",       "name": "等式基本性质",      "difficulty": 1, "subject": "math"},
+    {"id": "MATH-LIN-1V",        "name": "一元一次方程求解",   "difficulty": 2, "subject": "math"},
+    {"id": "MATH-LIN-2V",        "name": "二元一次方程组求解", "difficulty": 3, "subject": "math"},
+    {"id": "MATH-QUAD-1V",       "name": "一元二次方程求解",   "difficulty": 3, "subject": "math"},
+    {"id": "MATH-FUNC-CONCEPT",  "name": "函数基本概念",       "difficulty": 2, "subject": "math"},
+    {"id": "MATH-FUNC-LIN",      "name": "一次函数",           "difficulty": 3, "subject": "math"},
+    {"id": "MATH-FUNC-QUAD",     "name": "二次函数",           "difficulty": 4, "subject": "math"},
+    {"id": "MATH-TRIG-BASIC",    "name": "三角函数基础",       "difficulty": 4, "subject": "math"},
+    {"id": "MATH-GEOM-CIRCLE",   "name": "圆的基本性质",       "difficulty": 3, "subject": "math"},
+    {"id": "MATH-GEOM-TRIANGLE", "name": "三角形性质",         "difficulty": 3, "subject": "math"},
+    {"id": "PROG-VAR",           "name": "变量与赋值",         "difficulty": 1, "subject": "programming"},
+    {"id": "PROG-LOOP",          "name": "循环结构",           "difficulty": 2, "subject": "programming"},
+    {"id": "PROG-COND",          "name": "条件分支",           "difficulty": 2, "subject": "programming"},
+    {"id": "PROG-FUNC",          "name": "函数定义与调用",     "difficulty": 3, "subject": "programming"}
+  ],
+  "edges": [
+    {"src": "MATH-BASIC-OP",     "dst": "MATH-EQ-PROP",      "type": "prerequisite"},
+    {"src": "MATH-EQ-PROP",      "dst": "MATH-LIN-1V",       "type": "prerequisite"},
+    {"src": "MATH-LIN-1V",       "dst": "MATH-LIN-2V",       "type": "prerequisite"},
+    {"src": "MATH-LIN-1V",       "dst": "MATH-QUAD-1V",      "type": "prerequisite"},
+    {"src": "MATH-FUNC-CONCEPT", "dst": "MATH-FUNC-LIN",     "type": "prerequisite"},
+    {"src": "MATH-FUNC-CONCEPT", "dst": "MATH-FUNC-QUAD",    "type": "prerequisite"},
+    {"src": "MATH-FUNC-LIN",     "dst": "MATH-FUNC-QUAD",    "type": "prerequisite"},
+    {"src": "MATH-GEOM-TRIANGLE","dst": "MATH-GEOM-CIRCLE",  "type": "related"},
+    {"src": "MATH-GEOM-TRIANGLE","dst": "MATH-TRIG-BASIC",   "type": "prerequisite"},
+    {"src": "PROG-VAR",          "dst": "PROG-LOOP",         "type": "prerequisite"},
+    {"src": "PROG-VAR",          "dst": "PROG-COND",         "type": "prerequisite"},
+    {"src": "PROG-COND",         "dst": "PROG-FUNC",         "type": "prerequisite"},
+    {"src": "PROG-LOOP",         "dst": "PROG-FUNC",         "type": "prerequisite"}
+  ],
+  "synonyms": {
+    "MATH-LIN-1V":     ["一元一次方程", "一元一次方程求解", "解方程", "移项"],
+    "MATH-QUAD-1V":    ["一元二次方程", "一元二次方程求解", "求根公式", "韦达定理"],
+    "MATH-FUNC-QUAD":  ["二次函数", "抛物线", "开口方向", "对称轴"],
+    "MATH-FUNC-LIN":   ["一次函数", "斜率", "截距", "直线"],
+    "MATH-GEOM-CIRCLE":["圆", "圆周率", "圆的性质"],
+    "MATH-TRIG-BASIC": ["三角函数", "sin", "cos", "tan"],
+    "MATH-EQ-PROP":    ["等式性质", "等式两边同时"],
+    "MATH-BASIC-OP":   ["加减乘除", "运算"],
+    "PROG-LOOP":       ["for循环", "while循环", "循环", "遍历"],
+    "PROG-COND":       ["if", "else", "判断", "分支"],
+    "PROG-FUNC":       ["def", "函数", "return", "调用"],
+    "PROG-VAR":        ["变量", "赋值", "int", "float", "str"]
+  },
+  "default_chain": [
+    "MATH-BASIC-OP",
+    "MATH-EQ-PROP",
+    "MATH-LIN-1V"
+  ]
+}

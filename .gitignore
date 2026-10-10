@@ -1,0 +1,42 @@
+# Python 字节码
+__pycache__/
+*.py[cod]
+*.pyc
+*.so
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# 配置与密钥（请自行 cp config.example.py 为 config.py）
+backend/config.py
+backend/.env
+
+# 运行产物
+backend/data/raw_responses/*
+backend/data/results/*
+backend/data/cache/*
+backend/data/logs/*
+backend/data/uploads/*
+output/*
+!backend/data/raw_responses/.gitkeep
+!backend/data/results/.gitkeep
+!backend/data/cache/.gitkeep
+!backend/data/logs/.gitkeep
+!backend/data/uploads/.gitkeep
+!backend/data/sample_images/.gitkeep
+!output/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 日志与缓存文件
+*.log
+*.tmp
